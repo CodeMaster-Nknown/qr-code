@@ -6,4 +6,5 @@ instance/
 env/
 venv/
 *.db
-!qrcodes_v2.db # Keep existing DB if user wants it, or maybe ignore it? I'll ignore *.db generally but maybe keep the schema if it was a migration. Let's just ignore DBs to be safe for a public repo.
+!qrcodes_v2.db
+static/images/
