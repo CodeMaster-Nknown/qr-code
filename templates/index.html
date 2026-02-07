@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Master - Premium Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="main-content">
+        <button id="themeToggle" class="theme-btn" aria-label="Toggle Theme">
+            <i class="fa-solid fa-sun"></i>
+        </button>
+        <div class="app-layout">
+            <!-- Left Side: Input & Branding -->
+            <section class="brand-section">
+                <header>
+                    <div class="logo">
+                        <i class="fa-solid fa-qrcode fa-spin-pulse" style="--fa-animation-duration: 3s;"></i>
+                        <h1>QR Master</h1>
+                    </div>
+                    <p class="tagline">Unleash the Power of Connectivity.</p>
+                    <p class="sub-tagline">Instantly transform any link into a portal. Professional, trackable, and
+                        beautiful.</p>
+                </header>
+
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-link input-icon"></i>
+                        <input type="url" id="urlInput" placeholder="Paste your destination URL..." required>
+                    </div>
+                    <!-- Dynamic domain hint could go here -->
+                    <button id="generateBtn" class="premium-btn">
+                        <span>Generate Access Code</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Side: Preview & Result -->
+            <section class="preview-section">
+                <div class="result-card" id="resultCard">
+                    <div class="card-glass">
+                        <div class="loader" id="loader"></div>
+                        <img id="qrImage" src="" alt="Generated QR Code" class="hidden">
+                        <div class="qr-placeholder" id="qrPlaceholder">
+                            <i class="fa-solid fa-cube"></i>
+                            <p>Your masterpiece will appear here</p>
+                        </div>
+                    </div>
+
+                    <div class="qr-actions hidden" id="qrActions">
+                        <a id="downloadBtn" href="#" download="qrmaster.png" class="action-btn zoom-hover"
+                            title="Download">
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- History Section (Full Width Bottom) -->
+        <section class="history-section">
+            <div class="history-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Visuals</h2>
+                <button id="clearHistoryBtn" class="action-btn clear-history-btn" title="Clear History">
+                    <span>Clear History</span>
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+            <div id="historyContainer">
+                <!-- Dynamic Category Groups will be injected here -->
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>
