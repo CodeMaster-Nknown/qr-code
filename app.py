@@ -2,17 +2,25 @@ import os
 import uuid
 import qrcode
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 from extensions import db
 from models import QRCodeRecord
 
 def create_app():
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///qrcodes_v2.db'
+    
+    # --- VERCEL CONFIGURATION ---
+    # Use /tmp for storage because Vercel file system is Read-Only
+    # Note: /tmp is ephemeral and will be cleared eventually.
+    tmp_dir = '/tmp'
+    
+    # Database
+    db_path = os.path.join(tmp_dir, 'qrcodes_v2.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Ensure static/images directory exists
-    images_dir = os.path.join(app.root_path, 'static', 'images')
+    # Images Directory in /tmp
+    images_dir = os.path.join(tmp_dir, 'images')
     os.makedirs(images_dir, exist_ok=True)
 
     db.init_app(app)
@@ -24,6 +32,11 @@ def create_app():
     def index():
         return render_template('index.html')
 
+    # Route to serve images from /tmp
+    @app.route('/tmp_images/<path:filename>')
+    def serve_tmp_image(filename):
+        return send_from_directory(images_dir, filename)
+
     @app.route('/generate', methods=['POST'])
     def generate_qr():
         data = request.get_json()
@@ -31,20 +44,6 @@ def create_app():
 
         if not url:
             return jsonify({'error': 'URL is required'}), 400
-
-        # Deduplication: Check if URL already exists
-        existing_record = QRCodeRecord.query.filter_by(url=url).first()
-        if existing_record:
-            # Update timestamp and return existing
-            existing_record.created_at = datetime.utcnow()
-            db.session.commit()
-            return jsonify({
-                'message': 'QR Code retrieved from history',
-                'qr_image': existing_record.image_path,
-                'original_url': url,
-                'domain': existing_record.domain,
-                'category': existing_record.category
-            })
 
         # Logic for Domain and Styling
         domain = "unknown"
@@ -95,17 +94,22 @@ def create_app():
         # Apply colors
         img = qr.make_image(fill_color=fill_color, back_color=back_color)
         
-        # Save unique filename
+        # Save unique filename to /tmp/images
         filename = f"qr_{uuid.uuid4().hex}.png"
-        file_path = os.path.join('static', 'images', filename)
-        full_path = os.path.join(app.root_path, file_path)
+        full_path = os.path.join(images_dir, filename)
         
         img.save(full_path)
 
+        # Get URL for the image
+        # We use our new serve_tmp_image route
+        image_url = url_for('serve_tmp_image', filename=filename)
+
         # Save to DB
+        # Note: We store the URL now, or the filename. storing filename is better if we rebuild the url.
+        # But for compatibility with existing frontend, let's store the serve path.
         record = QRCodeRecord(
             url=url, 
-            image_path=file_path,
+            image_path=image_url, # Storing the serve URL directly
             domain=domain,
             category=category
         )
@@ -114,7 +118,7 @@ def create_app():
 
         return jsonify({
             'message': 'QR Code generated successfully',
-            'qr_image': file_path,
+            'qr_image': image_url,
             'original_url': url,
             'domain': domain,
             'category': category
@@ -122,6 +126,7 @@ def create_app():
 
     @app.route('/history', methods=['GET'])
     def history():
+        # Re-creating DB context if it was lost (optional check could go here)
         records = QRCodeRecord.query.order_by(QRCodeRecord.created_at.desc()).limit(10).all()
         return jsonify([record.to_dict() for record in records])
 
